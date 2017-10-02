@@ -111,6 +111,9 @@ namespace Dse.Test.Unit.Graph
             var node = GetGraphNode(json);
             Assert.AreEqual(789, node.Get<int>("prop1"));
             Assert.AreEqual("prop2 value", node.Get<string>("prop2"));
+            var prop = node.Get<IGraphNode>("prop1");
+            Assert.AreEqual(789, prop.To<int>());
+            Assert.AreEqual("prop2 value", node.Get<IGraphNode>("prop2").ToString());
         }
 
         [Test]
@@ -258,6 +261,10 @@ namespace Dse.Test.Unit.Graph
             Assert.AreEqual("user", vertex.Label);
             Assert.AreEqual("jorge", vertex.Properties["name"].ToArray().First().Get<string>("value"));
             Assert.AreEqual(35, vertex.Properties["age"].ToArray().First().Get<int>("value"));
+            var iVertex = node.To<IVertex>();
+            Assert.AreEqual("user", iVertex.Label);
+            Assert.AreEqual("jorge", iVertex.GetProperty("name").Value.ToString());
+            Assert.AreEqual(35, iVertex.GetProperty("age").Value.To<int>());
         }
 
         [Test]
@@ -267,6 +274,9 @@ namespace Dse.Test.Unit.Graph
             Assert.Null(node.To<Vertex>());
             Assert.Null(node.To<Edge>());
             Assert.Null(node.To<Path>());
+            Assert.Null(node.To<IVertex>());
+            Assert.Null(node.To<IEdge>());
+            Assert.Null(node.To<IPath>());
         }
 
         /// <summary>
