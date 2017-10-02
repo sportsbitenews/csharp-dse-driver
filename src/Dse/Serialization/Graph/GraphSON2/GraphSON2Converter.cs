@@ -67,7 +67,9 @@ namespace Dse.Serialization.Graph.GraphSON2
                 { typeof(Edge), GetValueReader(ToEdge)},
                 { typeof(IEdge), GetValueReader(ToEdge)},
                 { typeof(Path), GetValueReader(ToPath)},
-                { typeof(IPath), GetValueReader(ToPath)}
+                { typeof(IPath), GetValueReader(ToPath)},
+                { typeof(IVertexProperty), GetValueReader(ToVertexProperty)},
+                { typeof(IProperty), GetValueReader(ToProperty)}
             };
         }
 
@@ -103,7 +105,6 @@ namespace Dse.Serialization.Graph.GraphSON2
 
         private static JToken GetValueToken<T>(JToken currentToken, bool allowNulls)
         {
-            Console.WriteLine(typeof(T));
             if (IsNullOrUndefined(currentToken))
             {
                 if (!allowNulls)

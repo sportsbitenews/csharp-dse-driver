@@ -325,7 +325,7 @@ namespace Dse.Test.Integration.Graph
         [TestCase(GraphSON1Language, "g.V().hasLabel('person').has('name', 'marko').as('a')" +
                                      ".outE('knows').as('b').inV().as('c', 'd')" +
                                      ".outE('created').as('e', 'f', 'g').inV().as('h').path()")]
-        [Ignore("Fix on CSHARP-434"), TestCase(GraphSON2Language, "{\"@type\":\"Bytecode\",\"step\":[" +
+        [TestCase(GraphSON2Language, "{\"@type\":\"Bytecode\",\"step\":[" +
                                      "[\"V\"],[\"has\",\"person\",\"name\",\"marko\"],[\"as\",\"a\"]," +
                                      "[\"outE\",\"knows\"],[\"as\",\"b\"],[\"inV\"],[\"as\",\"c\",\"d\"]," +
                                      "[\"outE\",\"hasLabel\",\"created\"],[\"as\",\"e\",\"f\",\"g\"],[\"inV\"],[\"as\", \"h\"],[\"path\"]]}")]
@@ -369,41 +369,43 @@ namespace Dse.Test.Integration.Graph
                     var objects = path.Objects.ToList();
                     Assert.AreEqual(5, objects.Count);
 
-                    var marko = objects[0].ToVertex();
-                    var knows = objects[1].ToEdge();
-                    var josh = objects[2].ToVertex();
-                    var created = objects[3].ToEdge();
-                    var software = objects[4].ToVertex();
+                    var marko = objects[0].To<IVertex>();
+                    var knows = objects[1].To<IEdge>();
+                    var josh = objects[2].To<IVertex>();
+                    var created = objects[3].To<IEdge>();
+                    var software = objects[4].To<IVertex>();
 
                     Assert.AreEqual("person", marko.Label);
-                    Assert.AreEqual("marko", marko.Properties["name"].ToArray()[0].Get<string>("value"));
-                    Assert.AreEqual(29, marko.Properties["age"].ToArray()[0].Get<int>("value"));
-
                     Assert.AreEqual("person", josh.Label);
-                    Assert.AreEqual("josh", josh.Properties["name"].ToArray()[0].Get<string>("value"));
-                    Assert.AreEqual(32, josh.Properties["age"].ToArray()[0].Get<int>("value"));
-
                     Assert.AreEqual("software", software.Label);
-                    Assert.AreEqual("java", software.Properties["lang"].ToArray()[0].Get<string>("value"));
-
-                    if (software.Properties["name"].ToArray()[0].Get<string>("value") == "lop")
-                    {
-                        Assert.AreEqual(0.4, created.Properties["weight"].ToDouble());
-                    }
-                    else
-                    {
-                        Assert.AreEqual(1.0, created.Properties["weight"].ToDouble());
-                        Assert.AreEqual("ripple", software.Properties["name"].ToArray()[0].Get<string>("value"));
-                    }
 
                     Assert.AreEqual("created", created.Label);
                     Assert.AreEqual("person", created.OutVLabel);
                     Assert.AreEqual("software", created.InVLabel);
 
                     Assert.AreEqual("knows", knows.Label);
-                    Assert.AreEqual(1, knows.Properties["weight"].ToDouble());
                     Assert.AreEqual("person", knows.OutVLabel);
                     Assert.AreEqual("person", knows.InVLabel);
+
+                    if (graphsonLanguage == GraphSON1Language)
+                    {
+                        // DSE only with GraphSON1 provides properties by default
+                        Assert.AreEqual("marko", marko.GetProperty("name").Value.To<string>());
+                        Assert.AreEqual(29, marko.GetProperty("age").Value.To<int>());
+                        Assert.AreEqual("josh", josh.GetProperty("name").Value.To<string>());
+                        Assert.AreEqual(32, josh.GetProperty("age").Value.To<int>());
+                        Assert.AreEqual("java", software.GetProperty("lang").Value.To<string>());
+                        if (software.GetProperty("name").Value.To<string>() == "lop")
+                        {
+                            Assert.AreEqual(0.4, created.GetProperty("weight").Value.ToDouble());
+                        }
+                        else
+                        {
+                            Assert.AreEqual(1.0, created.GetProperty("weight").Value.ToDouble());
+                            Assert.AreEqual("ripple", software.GetProperty("name").Value.To<string>());
+                        }
+                        Assert.AreEqual(1, knows.GetProperty("weight").Value.ToDouble());
+                    }
                 }
             }
         }
@@ -781,7 +783,7 @@ namespace Dse.Test.Integration.Graph
             }
         }
 
-        [Test, Ignore("WIP: Fixed on CSHARP-434")]
+        [Test]
         public async Task With_GraphSON2_It_Should_Insert_And_Retrieve_LocalDate_LocalTime()
         {
             const string schemaQuery = "schema.propertyKey('localdate').Date().ifNotExists().create();\n" +
@@ -790,15 +792,17 @@ namespace Dse.Test.Integration.Graph
 
             _session.ExecuteGraph(new SimpleGraphStatement(schemaQuery));
 
-            var deleteStatement = new SimpleGraphStatement("{\"@type\": \"g:Bytecode\", \"step\": " +
-                                                           "[[\"V\"], [\"has\", \"typetests\", \"name\", \"stephen\"],[\"drop\"]}}");
+            var deleteStatement = new SimpleGraphStatement("{\"@type\": \"g:Bytecode\", \"@value\": {" +
+                                                           "  \"step\": [[\"V\"], " +
+                                                           "    [\"has\", \"typetests\", \"name\", \"stephen\"]," +
+                                                           "    [\"drop\"]]}}");
             deleteStatement.SetGraphLanguage(GraphSON2Language);
             _session.ExecuteGraph(deleteStatement);
 
             var addStatement = new SimpleGraphStatement("{\"@type\":\"Bytecode\",\"step\":[" +
                                                         "[\"addV\", \"typetests\"],[\"property\",\"name\",\"stephen\"]," +
-                                                        "[\"property\",{\"@type\":\"T\",\"value\":\"gx:LocalDate\"},\"localdate\", \"1981-09-14\"]," +
-                                                        "[\"property\",{\"@type\":\"T\",\"value\":\"gx:LocalTime\"},\"localtime\", \"12:50\"]]}");
+                                                        "[\"property\",\"localdate\", {\"@type\":\"gx:LocalDate\",\"@value\":\"1981-09-14\"}]," +
+                                                        "[\"property\",\"localtime\", {\"@type\":\"gx:LocalTime\",\"@value\":\"12:50\"}]]}");
             addStatement.SetGraphLanguage(GraphSON2Language);
             await _session.ExecuteGraphAsync(addStatement).ConfigureAwait(false);
 
@@ -808,24 +812,45 @@ namespace Dse.Test.Integration.Graph
             var rs = await _session.ExecuteGraphAsync(statement).ConfigureAwait(false);
             var results = rs.ToArray();
             Assert.AreEqual(1, results.Length);
-            var stephen = rs.FirstOrDefault().ToVertex();
-            Assert.AreEqual("stephen", stephen.Properties["name"].ToArray()[0].Get<string>("value"));
-            Assert.AreEqual(LocalDate.Parse("1981-09-14"), stephen.Properties["localdate"].ToArray()[0].Get<LocalDate>("value"));
-            Assert.AreEqual(LocalTime.Parse("12:50"), stephen.Properties["localtime"].ToArray()[0].Get<LocalTime>("value"));
+            var stephen = results.First().To<IVertex>();
+            Assert.AreEqual("stephen", stephen.GetProperty("name").Value.ToString());
+            Assert.AreEqual(LocalDate.Parse("1981-09-14"), stephen.GetProperty("localdate").Value.To<LocalDate>());
+            Assert.AreEqual(LocalTime.Parse("12:50"), stephen.GetProperty("localtime").Value.To<LocalTime>());
         }
 
-        [Test]
-        public async Task With_GraphSON2_It_Should_Retrieve_Vertex_Name_Marko()
+        [TestCase(GraphSON2Language, "{\"@type\": \"g:Bytecode\", \"@value\": {\"step\": " +
+                                     "[[\"V\"], [\"has\", \"person\", \"name\", \"marko\"], [\"outE\"]," +
+                                     " [\"properties\"]]}}")]
+        [TestCase(GraphSON1Language, "g.V().has('person', 'name', 'marko').outE().properties()")]
+        public void Should_Retrieve_Edge_Properties(string graphsonLanguage, string graphQuery)
         {
-            var statement = new SimpleGraphStatement("{\"@type\": \"g:Bytecode\", \"@value\": {" +
-                                                     "  \"step\": [[\"V\"], [\"has\", \"person\", \"name\", \"marko\"]]}}");
-            statement.SetGraphLanguage(GraphSON2Language);
-            var rs = await _session.ExecuteGraphAsync(statement).ConfigureAwait(false);
+            var statement = new SimpleGraphStatement(graphQuery);
+            statement.SetGraphLanguage(graphsonLanguage);
+            var rs = _session.ExecuteGraph(statement);
             var results = rs.ToArray();
-            Assert.AreEqual(1, results.Length);
-            var markoVertex = results.FirstOrDefault().ToVertex();
-            Assert.AreEqual("person", markoVertex.Label);
-            Assert.AreEqual("marko", markoVertex.Properties["name"].ToArray()[0].Get<string>("value"));
+            Assert.Greater(results.Length, 1);
+            Assert.True(results.Any(x =>
+            {
+                var prop = x.To<IProperty>();
+                return prop.Name == "weight" && Math.Abs(prop.Value.To<double>() - 0.5) < 0.0001;
+            }));
+        }
+
+        [TestCase(GraphSON2Language, "{\"@type\": \"g:Bytecode\", \"@value\": {\"step\": " +
+                                     "[[\"V\"], [\"has\", \"person\", \"name\", \"marko\"], [\"properties\"]]}}")]
+        [TestCase(GraphSON1Language, "g.V().has('person', 'name', 'marko').properties()")]
+        public void Should_Retrieve_Vertex_Properties(string graphsonLanguage, string graphQuery)
+        {
+            var statement = new SimpleGraphStatement(graphQuery);
+            statement.SetGraphLanguage(graphsonLanguage);
+            var rs = _session.ExecuteGraph(statement);
+            var results = rs.ToArray();
+            Assert.Greater(results.Length, 1);
+            Assert.True(results.Any(x =>
+            {
+                var prop = x.To<IVertexProperty>();
+                return prop.Label == "name" && prop.Value.ToString() == "marko";
+            }));
         }
 
         private void ValidateVertexResult(Vertex vertex, string vertexLabel, string propertyName, string expectedValueString)

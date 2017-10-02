@@ -17,6 +17,18 @@ namespace Dse.Graph
     public class Vertex : Element, IVertex
     {
         /// <summary>
+        /// Creates a new <see cref="Vertex"/> instance.
+        /// </summary>
+        public Vertex(GraphNode id, string label, IDictionary<string, GraphNode> properties) 
+            : base(id, label, properties)
+        {
+            if (properties == null)
+            {
+                throw new ArgumentNullException(nameof(properties));
+            }
+        }
+
+        /// <summary>
         /// Gets the first property of this element that has the given name, or null if the property 
         /// does not exist.
         /// <para>
@@ -67,15 +79,6 @@ namespace Dse.Graph
         IEnumerable<IProperty> IElement.GetProperties()
         {
             return GetProperties();
-        }
-        
-        /// <summary>
-        /// Creates a new <see cref="Vertex"/> instance.
-        /// </summary>
-        public Vertex(GraphNode id, string label, IDictionary<string, GraphNode> properties) 
-            : base(id, label, properties)
-        {
-            
         }
     }
 }

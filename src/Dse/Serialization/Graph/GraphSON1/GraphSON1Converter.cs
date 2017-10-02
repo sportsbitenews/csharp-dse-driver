@@ -54,7 +54,9 @@ namespace Dse.Serialization.Graph.GraphSON1
                 { typeof(Edge), GetTokenReader(ToEdge) },
                 { typeof(IEdge), GetTokenReader(ToEdge) },
                 { typeof(Path), GetTokenReader(ToPath) },
-                { typeof(IPath), GetTokenReader(ToPath) }
+                { typeof(IPath), GetTokenReader(ToPath) },
+                { typeof(IVertexProperty), GetTokenReader(ToVertexProperty) },
+                { typeof(IProperty), GetTokenReader(ToProperty) }
             };
         }
 

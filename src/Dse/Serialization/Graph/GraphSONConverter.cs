@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Dse.Graph;
 using Newtonsoft.Json;
@@ -16,6 +17,9 @@ namespace Dse.Serialization.Graph
 {
     internal abstract class GraphSONConverter : JsonConverter
     {
+        private static readonly IDictionary<string, GraphNode> EmptyProperties =
+            new ReadOnlyDictionary<string, GraphNode>(new Dictionary<string, GraphNode>());
+
         protected delegate object ReadDelegate(JTokenReader reader, JsonSerializer serializer);
 
         protected delegate void WriteDelegate(JsonWriter writer, object value, JsonSerializer serializer);
@@ -52,7 +56,7 @@ namespace Dse.Serialization.Graph
 
         protected Vertex ToVertex(JToken token)
         {
-            IDictionary<string, GraphNode> properties = null;
+            var properties = EmptyProperties;
             var propertiesJsonProp = token["properties"] as JObject;
             if (propertiesJsonProp != null)
             {
@@ -68,7 +72,7 @@ namespace Dse.Serialization.Graph
 
         protected Edge ToEdge(JToken token)
         {
-            IDictionary<string, GraphNode> properties = null;
+            var properties = EmptyProperties;
             var propertiesJsonProp = token["properties"] as JObject;
             if (propertiesJsonProp != null)
             {
@@ -113,6 +117,30 @@ namespace Dse.Serialization.Graph
                 objects = objectsProp.Select(ToGraphNode).ToArray();
             }
             return new Path(labels, objects);
+        }
+
+        protected IVertexProperty ToVertexProperty(JToken token)
+        {
+            var properties = EmptyProperties;
+            var propertiesJsonProp = token["properties"] as JObject;
+            if (propertiesJsonProp != null)
+            {
+                properties = propertiesJsonProp
+                    .Properties()
+                    .ToDictionary(prop => prop.Name, prop => ToGraphNode(prop.Value));
+            }
+            return new VertexProperty(
+                ToGraphNode(token, "id", true),
+                ToString(token, "label", true),
+                ToGraphNode(token, "value"),
+                properties);
+        }
+
+        protected IProperty ToProperty(JToken token)
+        {
+            return new Property(
+                ToString(token, "key", true),
+                ToGraphNode(token, "value"));
         }
 
         protected TimeUuid ParseTimeUuid(string value)
