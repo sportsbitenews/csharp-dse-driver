@@ -353,5 +353,61 @@ namespace Dse.Graph
         {
             return b.ToPath();
         }
+
+        /// <summary>
+        /// Converts this instance to a string representation.
+        /// </summary>
+        public static implicit operator string(GraphNode b)
+        {
+            return b.ToString();
+        }
+
+        /// <summary>
+        /// Converts this instance to a short representation.
+        /// </summary>
+        public static implicit operator short(GraphNode b)
+        {
+            return b.To<short>();
+        }
+
+        /// <summary>
+        /// Converts this instance to an int representation.
+        /// </summary>
+        public static implicit operator int(GraphNode b)
+        {
+            return b.To<int>();
+        }
+
+        /// <summary>
+        /// Converts this instance to a long representation.
+        /// </summary>
+        public static implicit operator long(GraphNode b)
+        {
+            return b.To<long>();
+        }
+
+        /// <summary>
+        /// Converts this instance to a float representation.
+        /// </summary>
+        public static implicit operator float(GraphNode b)
+        {
+            return b.To<float>();
+        }
+
+        /// <summary>
+        /// Converts this instance to a long representation.
+        /// </summary>
+        public static implicit operator double(GraphNode b)
+        {
+            return b.To<double>();
+        }
+
+        /// <summary>
+        /// Converts this instance to a boolean representation.
+        /// </summary>
+        public static implicit operator bool(GraphNode b)
+        {
+            return b.To<bool>();
+        }
     }
 }

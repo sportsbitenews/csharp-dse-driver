@@ -35,6 +35,23 @@ namespace Dse.Test.Unit.Graph
         }
 
         [Test]
+        public void Implicit_Conversion_Operators_Test()
+        {
+            var intNode = GetGraphNode("{\"@type\": \"g:Int16\", \"@value\": 123}");
+            Assert.AreEqual(123, (int) intNode);
+            Assert.AreEqual(123L, (long) intNode);
+            Assert.AreEqual((short)123, (short) intNode);
+            Assert.AreEqual(123, (int) intNode);
+            string stringValue = GetGraphNode("\"something\"");
+            Assert.AreEqual("something", stringValue);
+            bool boolValue = GetGraphNode("true");
+            Assert.True(boolValue);
+            var floatNode = GetGraphNode("{\"@type\": \"g:Float\", \"@value\": 123.1}");
+            Assert.AreEqual(123.1f, (float) floatNode);
+            Assert.AreEqual(123.1D, (double) floatNode);
+        }
+
+        [Test]
         public void To_Should_Throw_For_Structs_With_Null()
         {
             var node = GetGraphNode("null");
@@ -265,6 +282,7 @@ namespace Dse.Test.Unit.Graph
             Assert.AreEqual("user", iVertex.Label);
             Assert.AreEqual("jorge", iVertex.GetProperty("name").Value.ToString());
             Assert.AreEqual(35, iVertex.GetProperty("age").Value.To<int>());
+            Assert.Null(iVertex.GetProperty("nonExistent"));
         }
 
         [Test]
